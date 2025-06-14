@@ -1,0 +1,164 @@
+From 589e0397ea55e61a08fdbcab52ad4639d382f08e Mon Sep 17 00:00:00 2001
+From: classabbyamp <dev@placeviolette.net>
+Date: Wed, 18 Dec 2024 16:06:31 -0500
+Subject: [PATCH 1/2] install/encrypt,lvm2,sd-encrypt: remove
+ 11-dm-initramfs.rules
+
+as of lvm2-2.03.24, this has been added to 10-dm.rules and is no longer
+needed.
+
+https://gitlab.com/lvmteam/lvm2/-/commit/eb4f744820832aff3d6da1bba14f12e91a5b3535
+---
+ install/encrypt    | 3 +--
+ install/lvm2       | 3 +--
+ install/sd-encrypt | 3 +--
+ 3 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/install/encrypt b/install/encrypt
+index 0f7530e5..35851c74 100644
+--- a/install/encrypt
++++ b/install/encrypt
+@@ -17,8 +17,7 @@ build() {
+     map add_udev_rule \
+         '10-dm.rules' \
+         '13-dm-disk.rules' \
+-        '95-dm-notify.rules' \
+-        '/usr/lib/initcpio/udev/11-dm-initramfs.rules'
++        '95-dm-notify.rules'
+ 
+     # cryptsetup calls pthread_create(), which dlopen()s libgcc_s.so.1
+     add_binary '/usr/lib/libgcc_s.so.1'
+diff --git a/install/lvm2 b/install/lvm2
+index 12f8409f..0c2e4566 100644
+--- a/install/lvm2
++++ b/install/lvm2
+@@ -31,8 +31,7 @@ build() {
+         '10-dm.rules' \
+         '11-dm-lvm.rules' \
+         '13-dm-disk.rules' \
+-        '95-dm-notify.rules' \
+-        '/usr/lib/initcpio/udev/11-dm-initramfs.rules'
++        '95-dm-notify.rules'
+ 
+     # this udev rule is specific for systemd and non-systemd systems
+     if declare -F add_systemd_unit &>/dev/null; then
+diff --git a/install/sd-encrypt b/install/sd-encrypt
+index f61e4b2b..29a69bdf 100644
+--- a/install/sd-encrypt
++++ b/install/sd-encrypt
+@@ -17,8 +17,7 @@ build() {
+         '10-dm.rules' \
+         '13-dm-disk.rules' \
+         '60-fido-id.rules' \
+-        '95-dm-notify.rules' \
+-        '/usr/lib/initcpio/udev/11-dm-initramfs.rules'
++        '95-dm-notify.rules'
+ 
+     map add_systemd_unit 'cryptsetup.target' \
+         'systemd-ask-password-console.path' \
+-- 
+GitLab
+
+
+From ed9d8f5da82ab6da3b02ccafb670f76c44632c34 Mon Sep 17 00:00:00 2001
+From: classabbyamp <dev@placeviolette.net>
+Date: Wed, 18 Dec 2024 16:08:18 -0500
+Subject: [PATCH 2/2] udev: add patched 69-dm-lvm.rules
+
+referenced in the lvm2 install hook for nonsystemd initcpios, but originated
+in arch's lvm2 package[1], so it did not exist in other distros. this is a
+patched version of the upstream udev rule.
+
+[1]: https://gitlab.archlinux.org/archlinux/packaging/packages/lvm2/-/blob/14768631e41e23715cb02f1d00531cb3683bfb4d/0001-udev-initcpio.patch
+---
+ udev/69-dm-lvm.rules | 65 ++++++++++++++++++++++++++++++++++++++++++++
+ udev/meson.build     |  1 +
+ 2 files changed, 66 insertions(+)
+ create mode 100644 udev/69-dm-lvm.rules
+
+diff --git a/udev/69-dm-lvm.rules b/udev/69-dm-lvm.rules
+new file mode 100644
+index 00000000..23f88d4a
+--- /dev/null
++++ b/udev/69-dm-lvm.rules
+@@ -0,0 +1,65 @@
++# SPDX-License-Identifier: GPL-2.0-only
++
++# Copyright (C) 2012,2021 Red Hat, Inc. All rights reserved.
++#
++# This file is part of LVM.
++#
++# This rule requires blkid to be called on block devices before so only devices
++# used as LVM PVs are processed (ID_FS_TYPE="LVM2_member").
++
++SUBSYSTEM!="block", GOTO="lvm_end"
++
++
++ENV{DM_UDEV_DISABLE_OTHER_RULES_FLAG}=="1", GOTO="lvm_end"
++
++# Only process devices already marked as a PV - this requires blkid to be called before.
++ENV{ID_FS_TYPE}!="LVM2_member", GOTO="lvm_end"
++ENV{DM_MULTIPATH_DEVICE_PATH}=="1", GOTO="lvm_end"
++ACTION=="remove", GOTO="lvm_end"
++
++# Create /dev/disk/by-id/lvm-pv-uuid-<PV_UUID> symlink for each PV
++ENV{ID_FS_UUID_ENC}=="?*", SYMLINK+="disk/by-id/lvm-pv-uuid-$env{ID_FS_UUID_ENC}"
++
++# If the PV is a special device listed below, scan only if the device is
++# properly activated. These devices are not usable after an ADD event,
++# but they require an extra setup and they are ready after a CHANGE event.
++# Also support coldplugging with ADD event but only if the device is already
++# properly activated.
++# This logic should be eventually moved to rules where those particular
++# devices are processed primarily (MD and loop).
++
++# DM device:
++KERNEL!="dm-[0-9]*", GOTO="next"
++ENV{DM_UDEV_PRIMARY_SOURCE_FLAG}=="1", ENV{DM_ACTIVATION}=="1", GOTO="lvm_scan"
++GOTO="lvm_end"
++
++# MD device:
++LABEL="next"
++KERNEL!="md[0-9]*", GOTO="next"
++IMPORT{db}="LVM_MD_PV_ACTIVATED"
++ACTION=="add", ENV{LVM_MD_PV_ACTIVATED}=="1", GOTO="lvm_scan"
++ACTION=="change", ENV{LVM_MD_PV_ACTIVATED}!="1", TEST=="md/array_state", ENV{LVM_MD_PV_ACTIVATED}="1", GOTO="lvm_scan"
++ACTION=="add", KERNEL=="md[0-9]*p[0-9]*", GOTO="lvm_scan"
++GOTO="lvm_end"
++
++# Loop device:
++LABEL="next"
++KERNEL!="loop[0-9]*", GOTO="next"
++ACTION=="add", ENV{LVM_LOOP_PV_ACTIVATED}=="1", GOTO="lvm_scan"
++ACTION=="change", ENV{LVM_LOOP_PV_ACTIVATED}!="1", TEST=="loop/backing_file", ENV{LVM_LOOP_PV_ACTIVATED}="1", GOTO="lvm_scan"
++GOTO="lvm_end"
++
++LABEL="next"
++ACTION!="add", GOTO="lvm_end"
++
++LABEL="lvm_scan"
++
++RUN+="/usr/bin/lvm pvscan --background --cache --activate ay --major $major --minor $minor", ENV{LVM_SCANNED}="1"
++GOTO="lvm_end"
++
++LABEL="lvm_direct_vgchange"
++ENV{LVM_VG_NAME_COMPLETE}=="?*", RUN+="/usr/bin/lvm vgchange -aay --autoactivation event $env{LVM_VG_NAME_COMPLETE}"
++GOTO="lvm_end"
++
++LABEL="lvm_end"
++
+diff --git a/udev/meson.build b/udev/meson.build
+index 6cbc7e73..ecd1953b 100644
+--- a/udev/meson.build
++++ b/udev/meson.build
+@@ -2,6 +2,7 @@
+ 
+ udev_rules = [
+     '01-memdisk.rules',
++    '69-dm-lvm.rules',
+ ]
+ 
+ foreach rule: udev_rules
+-- 
+GitLab
+

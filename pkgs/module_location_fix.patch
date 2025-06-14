@@ -1,0 +1,21 @@
+diff --git a/functions b/functions
+index d64c6c9..b77aadf 100755
+--- a/functions
++++ b/functions
+@@ -1316,10 +1316,15 @@ install_modules() {
+ 
+     msg "Generating module dependencies"
+     map add_file "$_d_kmoduledir"/modules.{builtin,builtin.modinfo,order}
++
++    # Why let me set the module root if it's just going to get stomped on later????
++    cp -r "${BUILDROOT}${_d_kmoduledir}" "${BUILDROOT}/lib/modules"
++    rm -r "${BUILDROOT}${_d_kmoduledir}"
++
+     depmod -b "$BUILDROOT" "$KERNELVERSION"
+ 
+     # remove all non-binary module.* files (except devname for on-demand module loading)
+-    rm "${BUILDROOT}${_d_kmoduledir}"/modules.!(*.bin|devname|softdep)
++    rm "${BUILDROOT}/lib/modules/$KERNELVERSION"/modules.!(*.bin|devname|softdep)
+ }
+ 
+ find_module_from_symbol() {

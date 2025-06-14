@@ -4,7 +4,9 @@
 Vagrant.configure("2") do |config|
   #config.vm.synced_folder "../dump", "/dump"
   config.vm.synced_folder ".", "/vagrant", disabled: true
-  config.vm.provision "shell", path: "./scripts/hello.sh"
+  config.vm.synced_folder "./flake/result", "/kernel", type: "rsync"
+  config.vm.provision "shell", path: "./scripts/kexec.sh"
+
 
   config.vm.provider :libvirt do |libvirt|
     libvirt.memory = 4096
@@ -59,11 +61,11 @@ Vagrant.configure("2") do |config|
     debian9.vm.hostname = "debian9"
   end
 
-  # Debian 8 - systemd 215
-  config.vm.define "debian8" do |debian8|
-    debian8.vm.box = "debian/jessie64"
-    debian8.vm.hostname = "debian8"
-  end
+  # Debian 8 - systemd 215 (But rsync refused)
+  #config.vm.define "debian8" do |debian8|
+  #  debian8.vm.box = "debian/jessie64"
+  #  debian8.vm.hostname = "debian8"
+  #end
 
   # openSUSE Leap 15.6 - systemd 254 (254.15+suse.93.g957aeb6452)
   config.vm.define "opensuse156" do |opensuse156|
@@ -95,11 +97,11 @@ Vagrant.configure("2") do |config|
     almalinux8.vm.hostname = "almalinux8"
   end
 
-  # Fedora 21 - systemd 216
-  config.vm.define "fedora21" do |fedora21|
-    fedora21.vm.box = "jimmidyson/fedora21-atomic"
-    fedora21.vm.hostname = "fedora21"
-  end
+  # Fedora 21 - systemd 216 (But rsync refused)
+  #config.vm.define "fedora21" do |fedora21|
+  #  fedora21.vm.box = "jimmidyson/fedora21-atomic"
+  #  fedora21.vm.hostname = "fedora21"
+  #end
 
   # CentOS 7 - systemd 219
   config.vm.define "centos7" do |centos7|
@@ -109,11 +111,11 @@ Vagrant.configure("2") do |config|
 
   # Now for the weird ones (aka non-SystemD)
 
-  # CentOS 6 - upstart 0.6.5 
-  config.vm.define "centos6" do |centos6|
-    centos6.vm.box = "generic/centos6"
-    centos6.vm.hostname = "centos6"
-  end
+  # CentOS 6 - upstart 0.6.5 (But rsync refused)
+  #config.vm.define "centos6" do |centos6|
+  #  centos6.vm.box = "generic/centos6"
+  #  centos6.vm.hostname = "centos6"
+  #end
 
   # Alpine Linux 3.21 - openrc (OpenRC 0.55.1)
   config.vm.define "alpine321" do |alpine321|

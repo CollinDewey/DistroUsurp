@@ -23,6 +23,8 @@ let
     libxfs # fsck
     getent
     openssl # SystemD-based initramfs
+    thin-provisioning-tools # pdata_tools
+    lvm2
   ];
 
   mkinitcpio-unwrapped = stdenv.mkDerivation {
@@ -56,6 +58,7 @@ let
 
     patches = [
       ./udev.patch
+      ./hack.patch
       ./module_location_fix.patch
     ];
 

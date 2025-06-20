@@ -8,7 +8,10 @@
   outputs = { self, nixpkgs }:
     let
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true; # Vagrant is non-free
+      };
       kernel = pkgs.linuxPackages_latest;
       modules = pkgs.makeModulesClosure {
         rootModules = [
@@ -55,8 +58,8 @@
         MODULES=(${pkgs.lib.concatStringsSep " " modules.rootModules}) # This should actually autodetect - TO TEST LATER
         BINARIES=( )
         FILES=( )
-        #HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole sd-encrypt block filesystems fsck)
-        HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)
+        #HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole sd-encrypt block lvm2 filesystems fsck)
+        HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block lvm2 filesystems fsck)
       '';
     in
     {
@@ -72,6 +75,6 @@
         default = self.packages.${system}.stage1;
       };
       
-      devShells.default = pkgs.mkShell { buildInputs = with pkgs; [ vagrant shellcheck ]; };
+      devShells.${system}.default = pkgs.mkShell { buildInputs = with pkgs; [ vagrant shellcheck ]; };
     };
 }

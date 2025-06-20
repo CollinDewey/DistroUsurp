@@ -1,0 +1,15 @@
+diff --git a/init b/init
+index 5318695..251d683 100644
+--- a/init
++++ b/init
+@@ -66,6 +66,10 @@ fsck_root
+ # Mount root at /new_root
+ "$mount_handler" /new_root
+ 
++# Dirty Hack
++if [ -d /new_root/rootfs ]; then
++    mount --bind /new_root/rootfs /new_root
++fi
+ # We rely on word splitting
+ # shellcheck disable=SC2086
+ run_hookfunctions 'run_latehook' 'late hook' $LATEHOOKS

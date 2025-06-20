@@ -22,6 +22,7 @@ pkgs.stdenv.mkDerivation {
 
   installPhase = ''
     mkdir -p $out
+    cp -r $kernel_libs/* $out
     cp initramfs.cpio.zst $out
     cp ${pkgs.pkgsStatic.kexec-tools}/bin/kexec $out
     cp ${kernel.kernel}/bzImage $out

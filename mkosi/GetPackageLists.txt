@@ -1,0 +1,6 @@
+Debian:
+apt update
+apt-cache dumpavail | awk '/^Package:/ {pkg=$2} /^Priority:/ {if ($2 == "required" || $2 == "important") packages = packages ? packages "," pkg : pkg} END {print packages}'
+
+Fedora: (You'll need to pick out which groups you want)
+mandatory_packages=$(for group in standard core server-product; do dnf group info "$group" 2>/dev/null | awk '/^Mandatory packages/{flag=1; next} /^[A-Za-z]+ packages/{flag=0} flag' | tr -d ':'; done | tr '\n' ' ' | xargs -n1 | sort -u | tr '\n' ','); echo "${mandatory_packages%,}"

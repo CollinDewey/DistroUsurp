@@ -1,0 +1,18 @@
+{
+   "apperl_configs" : {
+      "DistroUsurp" : {
+         "desc" : "Distro Usurp",
+         "base" : "full",
+         "dest" : "distrousurp",
+         "install_modules": [
+            "modules/JSON-4.10.tar.gz"
+          ],
+          "zip_extra_files": {
+            "bin": ["distrousurp.pl"]
+          },
+          "default_script": "/zip/bin/distrousurp.pl"
+      }
+   },
+   "defaultconfig" : "DistroUsurp"
+}
+

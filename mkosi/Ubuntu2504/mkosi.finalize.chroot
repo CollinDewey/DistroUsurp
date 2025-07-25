@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+mkdir -p /run/systemd
+touch /run/systemd/system
+curl -L https://nixos.org/nix/install | sh -s -- --daemon --yes
+rm -rf /run/systemd/system

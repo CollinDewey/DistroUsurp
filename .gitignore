@@ -1,4 +1,8 @@
 .direnv
 .vagrant
-scripts/reconnaissance
 result
+mkosi/out/*
+perl/.apperl
+perl/distrousurp*
+perl/modules
+perl/*-static

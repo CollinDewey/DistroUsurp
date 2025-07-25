@@ -4,9 +4,7 @@
 Vagrant.configure("2") do |config|
   #config.vm.synced_folder "../dump", "/dump"
   config.vm.synced_folder ".", "/vagrant", disabled: true
-  config.vm.synced_folder "./result", "/kernel", type: "rsync"
-  config.vm.synced_folder "./rootfs", "/rootfs", type: "rsync"
-  config.vm.provision "shell", path: "./scripts/kexec.sh"
+  config.vm.provision "shell", path: "./scripts/vagrant.sh"
 
 
   config.vm.provider :libvirt do |libvirt|
